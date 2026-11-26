@@ -2824,7 +2824,8 @@ async function generateSpeech() {
     return;
   }
   const provider = $("ttsProvider")?.value || "gemini";
-  const voice = $("elevenVoiceIdManual")?.value?.trim() || $("voiceSelect")?.value || "";
+  const manualElevenVoice = provider === "elevenlabs" ? ($("elevenVoiceIdManual")?.value?.trim() || "") : "";
+  const voice = manualElevenVoice || $("voiceSelect")?.value || "";
   const model = provider === "elevenlabs" ? ($("ttsModel")?.value || "eleven_v4") : "";
   const style = $("ttsInstructions")?.value?.trim() || "";
   const button = $("voiceGenerateBtn");
