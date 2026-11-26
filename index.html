@@ -887,7 +887,19 @@ body.ready .app { opacity: 1; }
 .result-title { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .result-title .icon { color: var(--accent); width: 17px; height: 17px; }
 
-.voice-grid { display: grid; grid-template-columns: 1fr 220px; gap: 14px; }
+.voice-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
+.voice-settings-stack { display: flex; flex-direction: column; min-width: 0; }
+.voice-settings-stack .field { margin-bottom: 12px; }
+.tts-notice {
+  margin-top: 2px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
 .audio-player {
   display: flex;
   align-items: center;
@@ -1440,9 +1452,9 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
         <div class="page-scroll">
           <div class="page-inner">
             <div class="page-header">
-              <span class="eyebrow"><span data-icon="mic"></span> Gemini TTS</span>
-              <h1>AI Ovoz</h1>
-              <p>Matnni tabiiy ovozga aylantiring. Model: <strong>gemini-3.8-flash-tts</strong>.</p>
+              <span class="eyebrow"><span data-icon="mic"></span> MULTI-ENGINE VOICE STUDIO</span>
+              <h1>AI Ovoz Studio</h1>
+              <p>Gemini, OpenAI yoki ElevenLabs yordamida matnni tabiiy ovozga aylantiring. Ovoz sun’iy intellekt tomonidan yaratiladi.</p>
             </div>
 
             <div class="panel">
@@ -1450,21 +1462,50 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
                 <div class="field">
                   <label for="voiceText">Matn</label>
                   <textarea id="voiceText" class="textarea" rows="7" maxlength="5000" placeholder="O‘qib beriladigan matnni kiriting..."></textarea>
-                  <span class="hint">O‘zbekcha matn ham qabul qilinadi. Maksimal 5000 belgi.</span>
+                  <span id="voiceTextHint" class="hint">O‘zbekcha matn ham qabul qilinadi. Maksimal 5000 belgi.</span>
                 </div>
-                <div class="field">
-                  <label for="voiceSelect">Ovoz</label>
-                  <select id="voiceSelect" class="select">
-                    <option value="Kore">Kore — qat’iy, ayol</option>
-                    <option value="Puck">Puck — quvnoq, erkak</option>
-                    <option value="Charon">Charon — ma’lumotli, erkak</option>
-                    <option value="Fenrir">Fenrir — hayajonli, erkak</option>
-                    <option value="Aoede">Aoede — yengil, ayol</option>
-                    <option value="Zephyr">Zephyr — yorqin, ayol</option>
-                    <option value="Leda">Leda — yosh, ayol</option>
-                    <option value="Orus">Orus — qat’iy, erkak</option>
-                  </select>
-                  <span class="hint">Har bir ovoz turlicha ohangda.</span>
+                <div class="voice-settings-stack">
+                  <div class="field">
+                    <label for="ttsProvider">AI ovoz dvigateli</label>
+                    <select id="ttsProvider" class="select">
+                      <option value="gemini">Google Gemini</option>
+                      <option value="openai">OpenAI GPT TTS</option>
+                      <option value="elevenlabs">ElevenLabs</option>
+                    </select>
+                  </div>
+
+                  <div class="field" id="ttsModelField" hidden>
+                    <label for="ttsModel">ElevenLabs modeli</label>
+                    <select id="ttsModel" class="select">
+                      <option value="eleven_v4">Eleven v4 — Uzbek, 90+ til</option>
+                      <option value="eleven_v3">Eleven v3 — Uzbek, 70+ til</option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label for="voiceSelect">Ovoz</label>
+                    <select id="voiceSelect" class="select"></select>
+                    <span id="voiceHelp" class="hint">Gemini ovozlaridan birini tanlang.</span>
+                    <button type="button" id="elevenRefreshVoices" class="btn btn-secondary btn-small" hidden>
+                      <span data-icon="refresh"></span>Ovozlar ro‘yxatini yangilash
+                    </button>
+                  </div>
+
+                  <div class="field" id="ttsInstructionsField">
+                    <label for="ttsInstructions">Ovoz uslubi / ko‘rsatma</label>
+                    <input id="ttsInstructions" class="input" type="text" maxlength="500" placeholder="Masalan: calm, warm Uzbek narration">
+                    <span class="hint">Ovoz ohangi va ifodasini tariflang.</span>
+                  </div>
+
+                  <div id="openaiTtsNotice" class="tts-notice" hidden>
+                    OpenAI ovozlari ingliz tiliga optimallashtirilgan. Ushbu Speech API 2027-yil 6-yanvarda o‘chirilishi rejalashtirilgan.
+                  </div>
+                  <div id="elevenTtsNotice" class="tts-notice" hidden>
+                    Eleven v4 Uzbek tilini qo‘llaydi. Ovozlar ro‘yxati sening ElevenLabs akkauntingdan olinadi.
+                  </div>
+                  <div id="geminiTtsNotice" class="tts-notice">
+                    Gemini TTS — amaldagi Google ovoz dvigateli.
+                  </div>
                 </div>
               </div>
 
@@ -2689,39 +2730,129 @@ function describeVoiceError(err) {
   if (err && err.code === "empty-audio") return err.message;
   return describeError(err);
 }
+const GEMINI_TTS_VOICES = [
+  ["Kore", "Kore — qat’iy, ayol"], ["Puck", "Puck — quvnoq, erkak"],
+  ["Charon", "Charon — ma’lumotli, erkak"], ["Fenrir", "Fenrir — hayajonli, erkak"],
+  ["Aoede", "Aoede — yengil, ayol"], ["Zephyr", "Zephyr — yorqin, ayol"],
+  ["Leda", "Leda — yosh, ayol"], ["Orus", "Orus — qat’iy, erkak"]
+];
+const OPENAI_TTS_VOICES = ["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse", "marin", "cedar"];
+let elevenVoiceLoadId = 0;
+
+function setTtsVoiceOptions(items, selectedValue = "") {
+  const select = $("voiceSelect");
+  if (!select) return;
+  select.replaceChildren();
+  for (const item of items) {
+    const option = document.createElement("option");
+    option.value = item.value;
+    option.textContent = item.label;
+    select.appendChild(option);
+  }
+  if (selectedValue && items.some(item => item.value === selectedValue)) select.value = selectedValue;
+}
+
+async function loadElevenLabsVoices() {
+  const loadId = ++elevenVoiceLoadId;
+  const select = $("voiceSelect");
+  const help = $("voiceHelp");
+  if (!select) return;
+  setTtsVoiceOptions([{ value: "", label: "Ovozlar yuklanmoqda..." }]);
+  if (help) help.textContent = "ElevenLabs akkauntingdagi ovozlar olinmoqda...";
+  try {
+    const response = await fetchWithTimeout("/api/elevenlabs-voices", {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      cache: "no-store"
+    }, 25000);
+    const payload = await readJson(response);
+    if (!response.ok) throw new Error(payload?.error || `ElevenLabs HTTP ${response.status}`);
+    if (loadId !== elevenVoiceLoadId) return;
+    const voices = Array.isArray(payload.voices) ? payload.voices : [];
+    const options = voices.map(v => ({
+      value: v.id,
+      label: v.language ? `${v.name} · ${v.language}` : v.name
+    }));
+    if (!options.length) {
+      setTtsVoiceOptions([{ value: "", label: "Ovoz topilmadi" }]);
+      if (help) help.textContent = "ElevenLabs akkauntingda foydalanish mumkin bo‘lgan ovoz topilmadi.";
+      return;
+    }
+    setTtsVoiceOptions(options);
+    if (help) help.textContent = `${options.length} ta ovoz topildi. O‘zing xohlagan ovozni tanla.`;
+  } catch (error) {
+    if (loadId !== elevenVoiceLoadId) return;
+    setTtsVoiceOptions([{ value: "", label: "Ovozlar yuklanmadi" }]);
+    if (help) help.textContent = (error instanceof Error ? error.message : "Ovozlarni yuklab bo‘lmadi.") + " API kalitni tekshir yoki keyinroq yangila.";
+  }
+}
+
+function updateTtsProviderUI(loadEleven = true) {
+  const provider = $("ttsProvider")?.value || "gemini";
+  if ($("ttsModelField")) $("ttsModelField").hidden = provider !== "elevenlabs";
+  if ($("ttsInstructionsField")) $("ttsInstructionsField").hidden = provider === "elevenlabs";
+  if ($("openaiTtsNotice")) $("openaiTtsNotice").hidden = provider !== "openai";
+  if ($("elevenTtsNotice")) $("elevenTtsNotice").hidden = provider !== "elevenlabs";
+  if ($("geminiTtsNotice")) $("geminiTtsNotice").hidden = provider !== "gemini";
+  if ($("elevenRefreshVoices")) $("elevenRefreshVoices").hidden = provider !== "elevenlabs";
+
+  const maxChars = provider === "openai" ? 4096 : provider === "elevenlabs" ? 2000 : 5000;
+  if ($("voiceText")) $("voiceText").maxLength = maxChars;
+  if ($("voiceTextHint")) $("voiceTextHint").textContent = `Tanlangan dvigatel limiti: maksimal ${maxChars.toLocaleString("uz-UZ")} belgi.`;
+
+  if (provider === "gemini") {
+    setTtsVoiceOptions(GEMINI_TTS_VOICES.map(([value, label]) => ({ value, label })), "Kore");
+    if ($("voiceHelp")) $("voiceHelp").textContent = "Gemini ovozlaridan birini tanlang.";
+  } else if (provider === "openai") {
+    setTtsVoiceOptions(OPENAI_TTS_VOICES.map(value => ({ value, label: value })), "marin");
+    if ($("voiceHelp")) $("voiceHelp").textContent = "OpenAI ovozlari, masalan Marin yoki Cedar.";
+  } else if (loadEleven) {
+    loadElevenLabsVoices();
+  }
+}
+
 async function generateSpeech() {
   const text = $("voiceText")?.value?.trim() || "";
   if (!text) {
     showToast("Avval matn kiriting.");
     return;
   }
-  const voice = $("voiceSelect")?.value || "Kore";
-  const style = "";
+  const provider = $("ttsProvider")?.value || "gemini";
+  const voice = $("voiceSelect")?.value || "";
+  const model = provider === "elevenlabs" ? ($("ttsModel")?.value || "eleven_v4") : "";
+  const style = $("ttsInstructions")?.value?.trim() || "";
   const button = $("voiceGenerateBtn");
+  if (provider === "elevenlabs" && !voice) {
+    showToast("Avval ElevenLabs ovozini tanlang.", "error");
+    return;
+  }
   if (button) { button.disabled = true; button.dataset.oldText = button.textContent; button.textContent = "Yaratilmoqda..."; }
   try {
     const response = await fetchWithTimeout("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice, style })
+      body: JSON.stringify({ text, provider, voice, model, style })
     }, 120000);
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || `TTS HTTP ${response.status}`);
     if (!payload.audio) throw new Error("Audio ma'lumoti topilmadi.");
     const bytes = Uint8Array.from(atob(payload.audio), c => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: payload.mimeType || "audio/wav" });
+    const mimeType = payload.mimeType || "audio/wav";
+    const extension = payload.fileExtension || (mimeType.includes("mpeg") ? "mp3" : mimeType.includes("wav") ? "wav" : "audio");
+    const blob = new Blob([bytes], { type: mimeType });
+    if (state.audioObjectUrl) URL.revokeObjectURL(state.audioObjectUrl);
     const url = URL.createObjectURL(blob);
     const player = $("voiceAudio");
     if (player) { player.src = url; player.hidden = false; }
     const panel = $("voiceResultPanel");
     if (panel) panel.hidden = false;
     const download = $("voiceDownload");
-    if (download) { download.href = url; download.download = "ogai-voice.wav"; download.hidden = false; }
+    if (download) { download.href = url; download.download = `ogai-voice.${extension}`; download.hidden = false; }
     state.audioObjectUrl = url;
-    state.voiceExt = "wav";
+    state.voiceExt = extension;
     showToast("Ovoz tayyor.");
   } catch (error) {
-    showToast(error instanceof Error ? error.message : "TTS xatosi");
+    showToast(error instanceof Error ? error.message : "TTS xatosi", "error");
   } finally {
     if (button) { button.disabled = false; button.textContent = button.dataset.oldText || "Generate"; }
   }
@@ -3128,6 +3259,8 @@ function bindEvents() {
 
   $("voiceGenerateBtn").addEventListener("click", generateSpeech);
   $("voiceClipboardBtn").addEventListener("click", pasteClipboardAndGenerateSpeech);
+  $("ttsProvider").addEventListener("change", () => updateTtsProviderUI(true));
+  $("elevenRefreshVoices").addEventListener("click", loadElevenLabsVoices);
   $("voiceAudio").addEventListener("error", () => showToast("Audio faylini ijro etib bo'lmadi.", "error"));
 
   $("lockForm").addEventListener("submit", attemptUnlock);
@@ -3208,6 +3341,7 @@ function onMessageClick(e) {
 function init() {
   hydrateIcons();
   loadState();
+  updateTtsProviderUI(false);
   applyTheme(state.theme, false);
   applySidebarState(state.sidebar, false);
   renderProfile();
