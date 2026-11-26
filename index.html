@@ -1486,6 +1486,7 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
                     <label for="voiceSelect">Ovoz</label>
                     <select id="voiceSelect" class="select"></select>
                     <span id="voiceHelp" class="hint">Gemini ovozlaridan birini tanlang.</span>
+                    <input id="elevenVoiceIdManual" class="input" type="text" maxlength="128" placeholder="ElevenLabs Voice ID (qo‘lda kiritish)" hidden>
                     <button type="button" id="elevenRefreshVoices" class="btn btn-secondary btn-small" hidden>
                       <span data-icon="refresh"></span>Ovozlar ro‘yxatini yangilash
                     </button>
@@ -1498,7 +1499,7 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
                   </div>
 
                   <div id="openaiTtsNotice" class="tts-notice" hidden>
-                    OpenAI ovozlari ingliz tiliga optimallashtirilgan. Ushbu Speech API 2027-yil 6-yanvarda o‘chirilishi rejalashtirilgan.
+                    OpenAI API ChatGPT Go tarifiga kirmaydi — alohida API kaliti va to‘lov talab qiladi. Ovozlar ingliz tiliga optimallashtirilgan. Ushbu Speech API 2027-yil 6-yanvarda o‘chirilishi rejalashtirilgan.
                   </div>
                   <div id="elevenTtsNotice" class="tts-notice" hidden>
                     Eleven v4 Uzbek tilini qo‘llaydi. Ovozlar ro‘yxati sening ElevenLabs akkauntingdan olinadi.
@@ -2779,11 +2780,13 @@ async function loadElevenLabsVoices() {
       return;
     }
     setTtsVoiceOptions(options);
+    if ($("elevenVoiceIdManual")) $("elevenVoiceIdManual").hidden = true;
     if (help) help.textContent = `${options.length} ta ovoz topildi. O‘zing xohlagan ovozni tanla.`;
   } catch (error) {
     if (loadId !== elevenVoiceLoadId) return;
     setTtsVoiceOptions([{ value: "", label: "Ovozlar yuklanmadi" }]);
-    if (help) help.textContent = (error instanceof Error ? error.message : "Ovozlarni yuklab bo‘lmadi.") + " API kalitni tekshir yoki keyinroq yangila.";
+    if ($("elevenVoiceIdManual")) $("elevenVoiceIdManual").hidden = false;
+    if (help) help.textContent = (error instanceof Error ? error.message : "Ovozlarni yuklab bo‘lmadi.") + " Voice ID'ni qo‘lda kiriting yoki API kalitni tekshiring.";
   }
 }
 
@@ -2799,6 +2802,9 @@ function updateTtsProviderUI(loadEleven = true) {
   const maxChars = provider === "openai" ? 4096 : provider === "elevenlabs" ? 2000 : 5000;
   if ($("voiceText")) $("voiceText").maxLength = maxChars;
   if ($("voiceTextHint")) $("voiceTextHint").textContent = `Tanlangan dvigatel limiti: maksimal ${maxChars.toLocaleString("uz-UZ")} belgi.`;
+
+  if (provider !== "elevenlabs") elevenVoiceLoadId++;
+  if ($("elevenVoiceIdManual")) $("elevenVoiceIdManual").hidden = provider !== "elevenlabs";
 
   if (provider === "gemini") {
     setTtsVoiceOptions(GEMINI_TTS_VOICES.map(([value, label]) => ({ value, label })), "Kore");
@@ -2818,7 +2824,7 @@ async function generateSpeech() {
     return;
   }
   const provider = $("ttsProvider")?.value || "gemini";
-  const voice = $("voiceSelect")?.value || "";
+  const voice = $("voiceSelect")?.value || $("elevenVoiceIdManual")?.value?.trim() || "";
   const model = provider === "elevenlabs" ? ($("ttsModel")?.value || "eleven_v4") : "";
   const style = $("ttsInstructions")?.value?.trim() || "";
   const button = $("voiceGenerateBtn");
