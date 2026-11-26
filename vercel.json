@@ -1,8 +1,19 @@
 {
   "functions": {
-    "api/chat.ts": { "maxDuration": 60 },
-    "api/tts.ts": { "maxDuration": 60 },
-    "api/mcp.ts": { "maxDuration": 60 },
-    "api/mcp-status.ts": { "maxDuration": 10 }
+    "api/chat.ts": {
+      "maxDuration": 60
+    },
+    "api/tts.ts": {
+      "maxDuration": 60
+    },
+    "api/mcp.ts": {
+      "maxDuration": 60
+    },
+    "api/mcp-status.ts": {
+      "maxDuration": 10
+    },
+    "api/elevenlabs-voices.ts": {
+      "maxDuration": 30
+    }
   }
 }
