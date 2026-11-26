@@ -1,0 +1,10 @@
+{
+  "name": "ogaaai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": { "dev": "vercel dev", "typecheck": "tsc --noEmit" },
+  "dependencies": { "@modelcontextprotocol/sdk": "^1.32.2", "zod": "^4.2.0" },
+  "devDependencies": { "@types/node": "^22.0.0", "typescript": "^5.7.0", "vercel": "^48.0.0", "@vercel/node": "^5.3.0" }
+}
