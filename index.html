@@ -1486,7 +1486,7 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
                     <label for="voiceSelect">Ovoz</label>
                     <select id="voiceSelect" class="select"></select>
                     <span id="voiceHelp" class="hint">Gemini ovozlaridan birini tanlang.</span>
-                    <input id="elevenVoiceIdManual" class="input" type="text" maxlength="128" placeholder="ElevenLabs Voice ID (qo‘lda kiritish)" hidden>
+                    <input id="elevenVoiceIdManual" class="input" type="text" maxlength="128" placeholder="ElevenLabs Voice ID (ixtiyoriy, qo‘lda kiritish)" hidden>
                     <button type="button" id="elevenRefreshVoices" class="btn btn-secondary btn-small" hidden>
                       <span data-icon="refresh"></span>Ovozlar ro‘yxatini yangilash
                     </button>
@@ -2776,12 +2776,12 @@ async function loadElevenLabsVoices() {
     }));
     if (!options.length) {
       setTtsVoiceOptions([{ value: "", label: "Ovoz topilmadi" }]);
-      if (help) help.textContent = "ElevenLabs akkauntingda foydalanish mumkin bo‘lgan ovoz topilmadi.";
+      if ($("elevenVoiceIdManual")) $("elevenVoiceIdManual").hidden = false;
+      if (help) help.textContent = "Ovoz topilmadi. Voice ID'ni pastdagi maydonga qo‘lda kiriting.";
       return;
     }
     setTtsVoiceOptions(options);
-    if ($("elevenVoiceIdManual")) $("elevenVoiceIdManual").hidden = true;
-    if (help) help.textContent = `${options.length} ta ovoz topildi. O‘zing xohlagan ovozni tanla.`;
+    if (help) help.textContent = `${options.length} ta ovoz topildi. O‘zing xohlagan ovozni tanla yoki Voice ID'ni qo‘lda kiriting.`;
   } catch (error) {
     if (loadId !== elevenVoiceLoadId) return;
     setTtsVoiceOptions([{ value: "", label: "Ovozlar yuklanmadi" }]);
@@ -2824,7 +2824,7 @@ async function generateSpeech() {
     return;
   }
   const provider = $("ttsProvider")?.value || "gemini";
-  const voice = $("voiceSelect")?.value || $("elevenVoiceIdManual")?.value?.trim() || "";
+  const voice = $("elevenVoiceIdManual")?.value?.trim() || $("voiceSelect")?.value || "";
   const model = provider === "elevenlabs" ? ($("ttsModel")?.value || "eleven_v4") : "";
   const style = $("ttsInstructions")?.value?.trim() || "";
   const button = $("voiceGenerateBtn");
