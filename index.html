@@ -914,6 +914,52 @@ body.ready .app { opacity: 1; }
 .audio-time { min-width: 34px; color: var(--muted); font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
 #voiceAudio { display: block; width: 100%; min-height: 40px; }
 
+.mcp-status-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 68px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.mcp-status-dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  border-radius: 50%;
+  background: var(--warning);
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, .12);
+}
+.mcp-status-card[data-state="ready"] .mcp-status-dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, .13);
+}
+.mcp-status-card[data-state="offline"] .mcp-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, .13);
+}
+.mcp-status-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+.mcp-status-copy strong { color: var(--text); font-size: 13px; }
+.mcp-status-copy span { color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.mcp-status-card .btn { flex: 0 0 auto; }
+.mcp-url-field { margin-top: 20px; }
+.mcp-url-row { display: flex; align-items: center; gap: 8px; }
+.mcp-url-row .input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+.mcp-help-panel { margin-top: 14px; }
+.mcp-help-panel h3 { margin: 0 0 12px; font-size: 14px; }
+.mcp-help-panel p { margin: 8px 0; color: var(--text-soft); font-size: 12.5px; line-height: 1.5; }
+.mcp-help-panel code { padding: 2px 5px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); font-size: 11px; }
+.mcp-status-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 11px; line-height: 1.6; }
+@media (max-width: 560px) {
+  .mcp-status-card { align-items: flex-start; flex-wrap: wrap; }
+  .mcp-status-card .mcp-status-copy { flex-basis: calc(100% - 28px); }
+  .mcp-status-card .btn { margin-left: 24px; }
+  .mcp-url-row { align-items: stretch; flex-direction: column; }
+  .mcp-url-row .btn { justify-content: center; }
+}
+
 /* ============================================================
    8. MODALS
    ============================================================ */
@@ -1208,6 +1254,9 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
         <button class="nav-item" data-view="voice" title="AI Ovoz">
           <span data-icon="mic"></span><span class="nav-label">AI Ovoz</span>
         </button>
+        <button class="nav-item" data-view="mcp" title="MCP">
+          <span data-icon="code"></span><span class="nav-label">MCP</span>
+        </button>
       </nav>
 
       <div class="sidebar-section">
@@ -1433,6 +1482,51 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
               <div class="result-title"><span data-icon="mic"></span><strong>Yaratilgan audio</strong></div>
               <audio id="voiceAudio" controls preload="metadata" style="width:100%"></audio>
               <a id="voiceDownload" class="btn btn-secondary" hidden download="ogai-voice.wav">Audioni yuklab olish</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MCP VIEW -->
+      <section id="view-mcp" class="view" hidden>
+        <div class="page-scroll">
+          <div class="page-inner">
+            <div class="page-header">
+              <span class="eyebrow"><span data-icon="code"></span> MODEL CONTEXT PROTOCOL</span>
+              <h1>MCP integratsiya</h1>
+              <p>OgAI MCP server manzili va serverning ishga tayyorlik holatini tekshiring.</p>
+            </div>
+
+            <div class="panel">
+              <div id="mcpStatusCard" class="mcp-status-card" data-state="checking" role="status" aria-live="polite">
+                <span class="mcp-status-dot" aria-hidden="true"></span>
+                <div class="mcp-status-copy">
+                  <strong id="mcpStatusText">Holat tekshirilmagan</strong>
+                  <span id="mcpStatusHint">Server holatini tekshirish uchun tugmani bosing.</span>
+                </div>
+                <button type="button" id="mcpCheckBtn" class="btn btn-secondary">
+                  <span data-icon="refresh"></span>Holatni tekshirish
+                </button>
+              </div>
+
+              <div class="field mcp-url-field">
+                <label for="mcpUrlInput">MCP URL</label>
+                <div class="mcp-url-row">
+                  <input id="mcpUrlInput" class="input" type="url" readonly spellcheck="false">
+                  <button type="button" id="mcpCopyBtn" class="btn btn-secondary">
+                    <span data-icon="copy"></span>Nusxalash
+                  </button>
+                </div>
+                <span class="hint">Bu manzilni ChatGPT yoki boshqa MCP mijozining Streamable HTTP sozlamalariga kiriting.</span>
+              </div>
+            </div>
+
+            <div class="panel mcp-help-panel">
+              <h3>MCP mijoziga ulash</h3>
+              <p>Transport: <strong>Streamable HTTP</strong></p>
+              <p>Autentifikatsiya: <strong>Bearer token</strong></p>
+              <p>Token sifatida Vercel Environment Variables ichidagi <code>MCP_SHARED_SECRET</code> qiymatidan foydalaning. Maxfiy token ushbu sahifada ko‘rsatilmaydi.</p>
+              <div class="mcp-status-note">Holat indikatori MCP endpointi sozlanganini va server tekshiruviga javob berishini bildiradi. U ChatGPT yoki boshqa tashqi MCP mijozining ayni vaqtda faol ulangan sessiyasini aniqlamaydi.</div>
             </div>
           </div>
         </div>
@@ -2099,15 +2193,20 @@ function setView(view, scroll = true) {
   $("view-chat").hidden = view !== "chat";
   $("view-image").hidden = view !== "image";
   $("view-voice").hidden = view !== "voice";
+  $("view-mcp").hidden = view !== "mcp";
   document.querySelectorAll(".nav-item[data-view]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === view);
   });
-  pageTitle.textContent = view === "chat" ? "AI Chat" : view === "image" ? "Rasm yaratish" : "AI Ovoz";
+  pageTitle.textContent = view === "chat" ? "AI Chat" : view === "image" ? "Rasm yaratish" : view === "voice" ? "AI Ovoz" : "MCP";
   closeMobileSidebar();
   closeChatMenu();
   if (view === "chat") {
     renderChat();
     if (scroll) scrollBottom();
+  } else if (view === "mcp") {
+    const urlInput = $("mcpUrlInput");
+    if (urlInput) urlInput.value = getMcpEndpointUrl();
+    checkMcpStatus();
   }
 }
 function newChat() {
@@ -2866,12 +2965,64 @@ async function copyText(text) {
   }
 }
 
+
+
+/* ---------- MCP status ---------- */
+function getMcpEndpointUrl() {
+  return window.location.origin + "/api/mcp";
+}
+function setMcpStatus(status, title, detail) {
+  const card = $("mcpStatusCard");
+  if (!card) return;
+  card.dataset.state = status;
+  $("mcpStatusText").textContent = title;
+  $("mcpStatusHint").textContent = detail;
+}
+async function checkMcpStatus() {
+  const button = $("mcpCheckBtn");
+  if (button) {
+    button.disabled = true;
+    button.dataset.oldText = button.textContent;
+    button.textContent = "Tekshirilmoqda...";
+  }
+  setMcpStatus("checking", "MCP holati tekshirilmoqda...", "Server bilan bog‘lanilmoqda.");
+  const urlInput = $("mcpUrlInput");
+  if (urlInput) urlInput.value = getMcpEndpointUrl();
+  try {
+    const response = await fetchWithTimeout("/api/mcp-status", {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      cache: "no-store"
+    }, 12000);
+    const payload = await readJson(response);
+    if (!response.ok) throw new Error(payload?.error || "HTTP " + response.status);
+    if (payload?.ready) {
+      const ttsText = payload.ttsReady ? "TTS ham tayyor." : "Gemini API kaliti yo‘q — TTS ishlamaydi.";
+      setMcpStatus("ready", "MCP ulandi", "MCP server sozlangan va javob bermoqda. " + ttsText);
+    } else {
+      const missing = Array.isArray(payload?.missing) ? payload.missing.join(", ") : "";
+      setMcpStatus("offline", "MCP ulanmagan", missing ? "Vercel Environment Variables yetishmayapti: " + missing : "MCP server sozlamalarini tekshiring.");
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Noma’lum xatolik";
+    setMcpStatus("offline", "MCP ulanmagan", "Server holatini tekshirib bo‘lmadi: " + message);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = '<span data-icon="refresh"></span>Holatni tekshirish';
+      hydrateIcons(button);
+    }
+  }
+}
+
 /* ---------- Event bindings ---------- */
 function bindEvents() {
   $("sidebarToggle").addEventListener("click", toggleSidebar);
   $("mobileMenuBtn").addEventListener("click", openMobileSidebar);
   $("sidebarBackdrop").addEventListener("click", closeMobileSidebar);
   $("newChatBtn").addEventListener("click", newChat);
+  $("mcpCheckBtn").addEventListener("click", checkMcpStatus);
+  $("mcpCopyBtn").addEventListener("click", () => copyText(getMcpEndpointUrl()));
 
   document.querySelectorAll(".nav-item[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => setView(btn.dataset.view));

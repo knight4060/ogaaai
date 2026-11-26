@@ -7,6 +7,7 @@ OgAI is deployed as a static single-page app with Vercel serverless API routes. 
 - `POST /api/chat` — proxies Gemini chat requests from the website.
 - `POST /api/tts` — generates WAV speech through the Gemini Interactions API.
 - `POST /api/mcp` — stateless Streamable HTTP MCP endpoint.
+- `GET /api/mcp-status` — checks whether the MCP endpoint and its required environment variables are ready. It does not report live external-client sessions.
 
 ## MCP tools
 
