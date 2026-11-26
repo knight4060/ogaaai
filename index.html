@@ -1472,7 +1472,9 @@ html[data-theme="light"] .modal { background: rgba(30, 25, 45, .28); }
                 <button id="voiceGenerateBtn" class="btn btn-primary">
                   <span data-icon="mic"></span>Ovoz yaratish
                 </button>
-
+                <button id="voiceClipboardBtn" class="btn btn-secondary" type="button" title="Clipboarddagi matnni joylab, ovoz yaratish">
+                  <span data-icon="copy"></span>Clipboarddan joylash va yaratish
+                </button>
               </div>
               <div id="voiceStatus" class="hint" style="margin-top:10px" hidden>Ovoz yaratilmoqda...</div>
               <div id="voiceError" class="inline-error" hidden></div>
@@ -3015,6 +3017,30 @@ async function checkMcpStatus() {
   }
 }
 
+
+async function pasteClipboardAndGenerateSpeech() {
+  const input = $("voiceText");
+  if (!input) return;
+  try {
+    if (!navigator.clipboard || typeof navigator.clipboard.readText !== "function") {
+      throw new Error("Clipboard API mavjud emas.");
+    }
+    const copiedText = await navigator.clipboard.readText();
+    if (!copiedText || !copiedText.trim()) {
+      showToast("Clipboard bo‘sh. Avval ChatGPT matnini nusxalang.", "error");
+      input.focus();
+      return;
+    }
+    input.value = copiedText.trim().slice(0, 5000);
+    autoResize(input);
+    showToast("Matn joylandi. Ovoz yaratilmoqda.");
+    await generateSpeech();
+  } catch (error) {
+    input.focus();
+    showToast("Clipboardga ruxsat berilmadi. Matnni shu maydonga Ctrl+V bilan joylang.", "error");
+  }
+}
+
 /* ---------- Event bindings ---------- */
 function bindEvents() {
   $("sidebarToggle").addEventListener("click", toggleSidebar);
@@ -3101,6 +3127,7 @@ function bindEvents() {
   $("imageSettingsBtn").addEventListener("click", openSettings);
 
   $("voiceGenerateBtn").addEventListener("click", generateSpeech);
+  $("voiceClipboardBtn").addEventListener("click", pasteClipboardAndGenerateSpeech);
   $("voiceAudio").addEventListener("error", () => showToast("Audio faylini ijro etib bo'lmadi.", "error"));
 
   $("lockForm").addEventListener("submit", attemptUnlock);
