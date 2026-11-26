@@ -1926,6 +1926,7 @@ function normalizeChats(raw) {
 /* ---------- Load / save ---------- */
 function loadState() {
   state.settings = normalizeSettings(store.get(STORAGE.settings, {}));
+  store.set(STORAGE.settings, state.settings); // Remove any legacy browser-stored Gemini API key.
   state.chats = normalizeChats(store.get(STORAGE.chats, []));
   state.activeChatId = store.get(STORAGE.active, null);
   if (!state.chats.some((c) => c.id === state.activeChatId)) state.activeChatId = null;
